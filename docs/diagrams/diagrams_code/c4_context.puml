@@ -1,0 +1,21 @@
+@startuml C4 Context Diagram
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+title C4 Context Diagram
+left to right direction
+
+Person(user, "Пользователь", "Изучает японский по песням")
+System_Boundary(jp, "jp-song-trainer") {
+  System(fe, "Фронтенд", "Интерфейс анализа песен")
+  System(be, "Бэкенд", "REST API + хранение")
+}
+System_Ext(ai, "DeepSeek API", "Перевод и комментарии")
+System_Ext(db, "База данных", "Хранение демо-песен и комментариев")
+
+Rel(user, fe, "Вставляет текст, читает перевод")
+Rel(fe, be, "REST API")
+Rel(be, ai, "Запрос перевода/объяснений")
+Rel(be, db, "Чтение/запись демо-песен")
+
+@enduml

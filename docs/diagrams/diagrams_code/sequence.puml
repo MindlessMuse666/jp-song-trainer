@@ -1,0 +1,51 @@
+@startuml Sequence Diagram: API "Перевод и комментарии"
+
+!theme mars
+title Sequence Diagram: API "Перевод и комментарии"
+
+skinparam sequenceParticipant underline
+skinparam roundcorner 10
+skinparam actorStyle awesome
+skinparam ParticipantFontColor #Black
+
+actor "**Клиент**" as Client #Pink
+participant "**Фронтенд (Vue)**" as FE #Thistle
+participant "**Бэкенд (Go API)**" as BE #BurlyWood
+participant "**DeepSeek API**" as AI #LightSkyBlue
+database "**База данных**" as DB #LightBlue
+
+Client ++ #Pink
+
+group#LawnGreen POST /translate
+    Client -> FE ++ #Thistle : Вставить текст песни\nНажать "Перевести"
+    FE -> BE ++ #BurlyWood : POST /api/translate {lyrics}
+    BE -> AI ++ #LightSkyBlue : Запрос перевода
+    alt#PaleVioletRed Таймаут DeepSeek
+        AI --> BE : Ошибка TIMEOUT
+        BE --> FE : 408 Request Timeout
+        FE --> Client : Сообщение об ошибке
+    else Успех
+        AI --> BE -- : Перевод блоками
+        BE -> DB ++ #LightBlue : Сохранение блоков (демо/история)
+        DB --> BE -- : OK
+        BE --> FE -- : 200 OK {songId, blocks}
+        FE --> Client -- : Отображение оригинал/перевод
+    end
+end
+
+group#CornflowerBlue POST /explain
+    Client -> FE ++ #Thistle : Клик по блоку
+    FE -> BE ++ #BurlyWood : POST /api/explain {songId, blockId}
+    BE -> AI ++ #LightSkyBlue : Запрос комментариев
+    alt#PaleVioletRed Ошибка DeepSeek
+        AI --> BE : Нет данных
+        BE --> FE : 500 Internal Error
+        FE --> Client : Сообщение "Комментарий не получен"
+    else Успех
+        AI --> BE -- : Комментарии (грамматика, кандзи, культура)
+        BE --> FE -- : 200 OK {explanations}
+        FE --> Client -- : Отображение комментариев
+    end
+end
+
+@enduml
