@@ -1,0 +1,369 @@
+openapi: 3.0.3
+info:
+  title: jp-song-trainer API
+  description: >
+    REST API для MVP проекта **jp-song-trainer** ("Японский по песням").  
+    Предназначен для перевода японских песен, управления комментариями и сохранения истории переводов.
+  version: 0.1.0
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local development server
+
+tags:
+  - name: Translation
+    description: Операции перевода текста песен
+  - name: History
+    description: Управление историей переводов
+  - name: Comments
+    description: Управление комментариями к переводу
+  - name: DemoSongs
+    description: Работа с предзагруженными демо-песнями
+
+paths:
+  /translate:
+    post:
+      tags:
+        - Translation
+      summary: Перевести текст песни
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - lyrics
+              properties:
+                title:
+                  type: string
+                  example: My Song
+                artist:
+                  type: string
+                  example: Some Artist
+                lyrics:
+                  type: string
+                  example: 君の名は
+      responses:
+        "200":
+          description: Успешный перевод блоками
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TranslationResponse"
+        "400":
+          description: Некорректный запрос
+        "408":
+          description: Таймаут ответа от DeepSeek
+        "500":
+          description: Внутренняя ошибка сервера
+
+  /history:
+    get:
+      tags:
+        - History
+      summary: Получить историю переводов
+      responses:
+        "200":
+          description: Список сохранённых переводов
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LocalSave"
+    delete:
+      tags:
+        - History
+      summary: Удалить перевод из истории
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Идентификатор сохранённого перевода
+      responses:
+        "204":
+          description: Перевод удалён
+        "404":
+          description: Перевод не найден
+        "500":
+          description: Внутренняя ошибка сервера
+
+  /comments/{id}:
+    put:
+      tags:
+        - Comments
+      summary: Обновить комментарий к переводу
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Идентификатор блока перевода
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommentUpdate"
+      responses:
+        "200":
+          description: Обновлённый комментарий
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BlockComment"
+        "400":
+          description: Некорректный запрос
+        "404":
+          description: Блок не найден
+        "500":
+          description: Ошибка сохранения
+
+  /demo-songs:
+    get:
+      tags:
+        - DemoSongs
+      summary: Получить список демо-песен
+      responses:
+        "200":
+          description: Метаданные и превью первых блоков демо-песен
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DemoSongPreview"
+
+  /demo-songs/{id}:
+    get:
+      tags:
+        - DemoSongs
+      summary: Получить полные данные демо-песни
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Идентификатор демо-песни
+      responses:
+        "200":
+          description: Полные данные песни
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Song"
+        "404":
+          description: Песня не найдена
+
+  /admin/demo-songs/{id}:
+    put:
+      tags:
+        - DemoSongs
+      summary: Обновить данные демо-песни (Admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Идентификатор демо-песни
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DemoSongUpdate"
+      responses:
+        "200":
+          description: Обновлённые данные песни
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Song"
+        "403":
+          description: Нет прав доступа
+        "404":
+          description: Песня не найдена
+        "500":
+          description: Ошибка сохранения
+
+components:
+  schemas:
+    TranslationResponse:
+      type: object
+      properties:
+        songId:
+          type: string
+          example: 123e4567-e89b-12d3-a456-426614174000
+        blocks:
+          type: array
+          items:
+            $ref: "#/components/schemas/Block"
+
+    Block:
+      type: object
+      properties:
+        id:
+          type: string
+          example: b1
+        orig:
+          type: string
+          example: 君の名は
+        trans:
+          type: string
+          example: Твоё имя
+
+    BlockComment:
+      type: object
+      properties:
+        id:
+          type: string
+          example: c1
+        grammar:
+          type: array
+          items:
+            type: object
+            properties:
+              rule:
+                type: string
+                example: Суффикс -は
+              note:
+                type: string
+                example: Указывает на тему предложения
+        kanji:
+          type: array
+          items:
+            type: object
+            properties:
+              char:
+                type: string
+                example: 歌
+              reading:
+                type: string
+                example: うた
+              meaning:
+                type: string
+                example: песня
+        culture:
+          type: array
+          items:
+            type: object
+            properties:
+              topic:
+                type: string
+                example: Аниме "Твоё имя"
+              note:
+                type: string
+                example: Песня связана с фильмом
+
+    LocalSave:
+      type: object
+      properties:
+        id:
+          type: string
+          example: 123e4567-e89b-12d3-a456-426614174000
+        title:
+          type: string
+          example: My Song
+        artist:
+          type: string
+          example: Some Artist
+        blocks:
+          type: array
+          items:
+            $ref: "#/components/schemas/Block"
+        created_at:
+          type: string
+          format: date-time
+          example: 2024-06-01T12:00:00Z
+
+    CommentUpdate:
+      type: object
+      properties:
+        grammar:
+          type: array
+          items:
+            type: object
+            properties:
+              rule:
+                type: string
+              note:
+                type: string
+        kanji:
+          type: array
+          items:
+            type: object
+            properties:
+              char:
+                type: string
+              reading:
+                type: string
+              meaning:
+                type: string
+        culture:
+          type: array
+          items:
+            type: object
+            properties:
+              topic:
+                type: string
+              note:
+                type: string
+
+    DemoSongPreview:
+      type: object
+      properties:
+        id:
+          type: string
+          example: demo1
+        title:
+          type: string
+          example: Lemon
+        artist:
+          type: string
+          example: Kenshi Yonezu
+        preview_blocks:
+          type: array
+          items:
+            $ref: "#/components/schemas/Block"
+
+    DemoSongUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+        artist:
+          type: string
+        blocks:
+          type: array
+          items:
+            $ref: "#/components/schemas/Block"
+        comments:
+          type: array
+          items:
+            $ref: "#/components/schemas/BlockComment"
+
+    Song:
+      type: object
+      properties:
+        id:
+          type: string
+          example: demo1
+        title:
+          type: string
+          example: Lemon
+        artist:
+          type: string
+          example: Kenshi Yonezu
+        blocks:
+          type: array
+          items:
+            $ref: "#/components/schemas/Block"
+        comments:
+          type: array
+          items:
+            $ref: "#/components/schemas/BlockComment"
