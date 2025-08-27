@@ -1,2 +1,7 @@
-jp-song-trainer.md
+# Documentation
+prompts/
+/docs/diagrams
+
+# Backend
 /backend/server
+.env
