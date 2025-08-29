@@ -1,6 +1,6 @@
 # Documentation
 prompts/
-/docs/diagrams
+/docs/.old-diagrams
 
 # Backend
 /backend/server
