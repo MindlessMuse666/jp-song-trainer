@@ -1,8 +1,8 @@
-# 📑 Backend документация ![MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+# 📑 Backend-спецификация ![MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 
 ![Go](https://img.shields.io/badge/go-%2300ADD8.svg?style=for-the-badge&logo=go&logoColor=white) ![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white) ![Postgres](https://img.shields.io/badge/postgres-%23316192.svg?style=for-the-badge&logo=postgresql&logoColor=white) ![Postman](https://img.shields.io/badge/Postman-FF6C37?style=for-the-badge&logo=postman&logoColor=white) ![Visual Studio Code](https://img.shields.io/badge/Visual%20Studio%20Code-0078d7.svg?style=for-the-badge&logo=visual-studio-code&logoColor=white)
 
-Добро пожаловать в backend-спецификацию сервиса для изучения японского языка через разбор песен и текстов!
+Добро пожаловать в backend-спецификацию сервиса для изучения японского языка через разбор песен и текстов! Этот документ описывает стек, структуру проекта, быстрый старт, API, тестовые http-реквесты и другие технические аспекты бэкенда.
 
 ---
 
@@ -14,6 +14,46 @@
 - JWT аутентификация
 - Docker & Docker Compose
 - Zap для логирования
+
+---
+
+## Структура проекта
+
+```md
+└── 📁backend
+    └── 📁cmd
+        └── 📁server
+            ├── main.go
+    └── 📁internal
+        └── 📁app
+        └── 📁config                  # Конфигурация приложения
+            ├── config.go
+        └── 📁handler                 # HTTP обработчики
+            ├── auth_handler.go
+            ├── health.go
+        └── 📁middleware              # Промежуточное ПО
+            ├── auth.go
+        └── 📁model                   # Модели данных
+            ├── models.go
+        └── 📁repository              # Работа с БД
+            ├── user_repository.go
+        └── 📁service                 # Бизнес-логика
+            ├── auth_service.go
+    └── 📁migrations                  # Миграции БД
+        ├── 001_init_schema.down.sql
+        ├── 001_init_schema.up.sql
+    └── 📁pkg
+        └── 📁database                # Подключение к БД
+            ├── database.go
+        └── 📁logger                  # Логирование
+            ├── logger.go
+    ├── .env
+    ├── docker-compose.yml
+    ├── Dockerfile
+    ├── go.mod
+    ├── go.sum
+    └── README.md
+```
 
 ---
 
@@ -148,60 +188,18 @@ curl -X GET http://localhost:8080/api/auth/profile \
 }
 ```
 
----
-
-## Миграции
-
-Миграции базы данных выполняются автоматически при запуске приложения через Docker Compose. Файлы миграций находятся в папке [migrations/](./migrations/)
-
----
-
-## Разработка
-
-### Структура проекта
-
-```md
-└── 📁backend
-    └── 📁cmd
-        └── 📁server
-            ├── main.go
-    └── 📁internal
-        └── 📁app
-        └── 📁config                  # Конфигурация приложения
-            ├── config.go
-        └── 📁handler                 # HTTP обработчики
-            ├── auth_handler.go
-            ├── health.go
-        └── 📁middleware              # Промежуточное ПО
-            ├── auth.go
-        └── 📁model                   # Модели данных
-            ├── models.go
-        └── 📁repository              # Работа с БД
-            ├── user_repository.go
-        └── 📁service                 # Бизнес-логика
-            ├── auth_service.go
-    └── 📁migrations                  # Миграции БД
-        ├── 001_init_schema.down.sql
-        ├── 001_init_schema.up.sql
-    └── 📁pkg
-        └── 📁database                # Подключение к БД
-            ├── database.go
-        └── 📁logger                  # Логирование
-            ├── logger.go
-    ├── .env
-    ├── docker-compose.yml
-    ├── Dockerfile
-    ├── go.mod
-    ├── go.sum
-    └── README.md
-```
-
 ### Добавление новых эндпоинтов
 
 1. Создайте обработчик в [internal/handler/](./internal/handler/)
 2. Добавьте соответствующий метод в сервис (internal/service/)
 3. Добавьте методы работы с БД в репозиторий (internal/repository/)
 4. Зарегистрируйте роут в [cmd/server/main.go](./cmd/server/main.go)
+
+---
+
+## Миграции
+
+Миграции базы данных выполняются автоматически при запуске приложения через Docker Compose. Файлы миграций находятся в папке [migrations/](./migrations/)
 
 ---
 
@@ -230,7 +228,7 @@ curl -X GET http://localhost:8080/api/auth/profile \
 
 ---
 
-### Лицензия
+## Лицензия
 
 Этот проект распространяется под лицензией MIT - смотри файл [LICENSE](../LICENCE) для деталей.
 
