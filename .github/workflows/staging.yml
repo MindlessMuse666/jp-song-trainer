@@ -1,0 +1,54 @@
+name: Deploy to Staging
+
+on:
+  push:
+    branches: [ main, master ]
+    paths:
+      - 'backend/**'
+  workflow_dispatch:
+
+env:
+  SSH_HOST: ${{ secrets.STAGING_SSH_HOST }}
+  SSH_USER: ${{ secrets.SSH_USER }}
+  SSH_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+
+jobs:
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    environment: staging
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup SSH
+      uses: webfactory/ssh-agent@v0.8.0
+      with:
+        ssh-private-key: ${{ env.SSH_KEY }}
+
+    - name: Deploy to staging server
+      run: |
+        ssh -o StrictHostKeyChecking=no ${{ env.SSH_USER }}@${{ env.SSH_HOST }} << 'EOF'
+          # Pull latest image
+          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/jp-song-trainer-backend:latest
+          
+          # Stop and remove old container
+          docker stop jp-song-trainer-staging || true
+          docker rm jp-song-trainer-staging || true
+          
+          # Run new container
+          docker run -d \
+            --name jp-song-trainer-staging \
+            --restart unless-stopped \
+            -p 8081:8080 \
+            -e DATABASE_URL="${{ secrets.STAGING_DATABASE_URL }}" \
+            -e JWT_SECRET="${{ secrets.STAGING_JWT_SECRET }}" \
+            -e PORT="8080" \
+            ${{ secrets.DOCKERHUB_USERNAME }}/jp-song-trainer-backend:latest
+        EOF
+
+    - name: Run smoke tests
+      run: |
+        curl --retry 5 --retry-delay 10 --max-time 30 \
+          http://${{ env.SSH_HOST }}:8081/health

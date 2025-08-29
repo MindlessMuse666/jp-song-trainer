@@ -1,0 +1,53 @@
+name: Deploy to Production
+
+on:
+  push:
+    tags:
+      - 'v*'
+    paths:
+      - 'backend/**'
+  workflow_dispatch:
+
+env:
+  SSH_HOST: ${{ secrets.SSH_HOST }}
+  SSH_USER: ${{ secrets.SSH_USER }}
+  SSH_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+
+jobs:
+  deploy:
+    name: Deploy to Server
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup SSH
+      uses: webfactory/ssh-agent@v0.8.0
+      with:
+        ssh-private-key: ${{ env.SSH_KEY }}
+
+    - name: Deploy to server
+      run: |
+        ssh -o StrictHostKeyChecking=no ${{ env.SSH_USER }}@${{ env.SSH_HOST }} << 'EOF'
+          # Pull latest image
+          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/jp-song-trainer-backend:latest
+          
+          # Stop and remove old container
+          docker stop jp-song-trainer-backend || true
+          docker rm jp-song-trainer-backend || true
+          
+          # Run new container
+          docker run -d \
+            --name jp-song-trainer-backend \
+            --restart unless-stopped \
+            -p 8080:8080 \
+            -e DATABASE_URL="${{ secrets.PROD_DATABASE_URL }}" \
+            -e JWT_SECRET="${{ secrets.PROD_JWT_SECRET }}" \
+            -e PORT="8080" \
+            ${{ secrets.DOCKERHUB_USERNAME }}/jp-song-trainer-backend:latest
+          
+          # Clean up old images
+          docker image prune -af
+        EOF
